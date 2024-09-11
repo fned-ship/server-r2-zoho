@@ -3,7 +3,7 @@ const http = require("http");
 const cors = require("cors") ;  //  It allows your server to handle requests from different origins (domains)
 const mongoose = require('mongoose');
 const { Server } = require("socket.io"); // live updates
-const { putObject, getObject, deleteObject } = require('./s3Client');
+const { getObject } = require('./s3Client');
 const stream = require('stream');
 const util = require('util');
 const app = express();
@@ -23,12 +23,7 @@ const port = process.env.PORT || 3001;
 const clientDomainName=process.env.ClientDomainName;
 // emailUserName
 const emailUserName=process.env.EmailUserName;
-// adminPhoneNUmber
-const adminPhoneNumber=process.env.adminPhoneNumber;
-//twilio
-const twilioSid=process.env.twilioSid ;
-const twilioToken=process.env.twilioToken ;
-const phoneNumber=process.env.phoneNumber ;
+
 //openAi 
 const GEMINI_API_KEY=process.env.GEMINI_API_KEY
 //server url
@@ -36,17 +31,15 @@ const serverURL=process.env.serverURL
 //payement
 const KONNECT_API_KEY=process.env.KONNECT_API_KEY
 const KONNECT_WALLET_ID=process.env.KONNECT_WALLET_ID
-const stripe_api_key=process.env.stripe_api_key
 const monthly=process.env.monthly
 const annually=process.env.annually
 //R2
 const bucketName = process.env.R2_BUCKET_NAME;
-//server URL
-const serverUrl=process.env.serverURL
 //middelware
 app.use(express.json()) ; // Parses incoming requests with JSON payloads.
 app.use(express.urlencoded({ extended: true })) // Parses incoming requests with URL-encoded payloads, supporting complex objects.
 app.use(cors())  //Allow all origins to access the API 
+
 // app.use(express.static("public"))  // Serves static files from the public directory
 const streamFile = async (req, res, folder) => {
     const fileName = req.path.substring(`/${folder}/`.length);
@@ -104,42 +97,6 @@ const streamFile = async (req, res, folder) => {
     }
 };
 
-// Proxying requests for static files
-// const streamFile = async (req, res, folder) => {
-//     const fileName = req.path.substring(`/${folder}/`.length);
-//     console.log("fileName:", fileName);
-//     const params = { Bucket: bucketName, Key: `${folder}/${fileName}` };
-
-//     try {
-//         const fileStream = await getObject(bucketName, `${folder}/${fileName}`);
-//         console.log("fileStream:", fileStream);
-
-//         if (!fileStream) {
-//             console.log("file not found");
-//             return res.status(404).json({ message: 'File not found' });
-//         }
-
-//         // Use a fallback content type if response.ContentType is undefined
-//         const contentType = 'application/octet-stream'; // Default to binary stream
-
-//         res.setHeader('Content-Type', contentType);
-//         res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-
-//         // Handle different types of streams
-//         if (Buffer.isBuffer(fileStream)) {
-//             // If it's a buffer, send it directly
-//             return res.end(fileStream);
-//         } else {
-//             // If it's a stream, pipe it
-//             fileStream.pipe(res);
-//         }
-//     } catch (error) {
-//         console.error('Error fetching file from R2:', error);
-//         if (!res.headersSent) {
-//             return res.status(500).json({ message: 'Error fetching file' });
-//         }
-//     }
-// };
 
 
 // Middleware for different folders
@@ -172,10 +129,10 @@ let nodeCron=require('./routes/cron');
 let pay=require('./routes/pay');
 signupRoute(app,clientDomainName,emailUserName);
 activateRouter(app);
-adminRoute(app,twilioSid,twilioToken,phoneNumber,emailUserName);
+adminRoute(app);
 loginRouter(app);
-resetRouter(app,clientDomainName,emailUserName);
-pay(app,stripe_api_key,KONNECT_WALLET_ID,KONNECT_API_KEY,emailUserName,monthly,annually,serverURL,clientDomainName)
+resetRouter(app,clientDomainName);
+pay(app,KONNECT_WALLET_ID,KONNECT_API_KEY,monthly,annually,serverURL,clientDomainName)
 
 //socket.io
 const io = new Server(server, {
@@ -186,14 +143,14 @@ const io = new Server(server, {
 });
 
 //twilio
-sendSMSRoute(app,twilioSid,twilioToken,phoneNumber);
+sendSMSRoute(app);
 //cron
-nodeCron(twilioSid,twilioToken,phoneNumber,adminPhoneNumber);
+nodeCron();
 //chatbot
 let chatBot=require('./routes/chatBot');
 chatBot(app,GEMINI_API_KEY,serverURL);
 //courses
-coursesRoute(app,clientDomainName,twilioSid,twilioToken,phoneNumber,emailUserName);
+coursesRoute(app);
 // socket connection
 io.on("connection", (socket) => {
     console.log("User Connected");

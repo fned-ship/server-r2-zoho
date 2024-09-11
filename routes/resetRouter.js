@@ -2,7 +2,7 @@ let User = require('../models/user');
 const bcrypt = require('bcrypt');
 const {sendMail2}=require("../zohoMail");
 
-let resetRouter=(app,clientDomainName,emailUserName)=>{
+let resetRouter=(app,clientDomainName)=>{
     app.post('/resetPassword',(req,res)=>{
         const email= req.body.email ;
         User.findOne({ email : email  },{email:1,SecurityCode:1})

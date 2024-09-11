@@ -1,7 +1,7 @@
 const sendSms = require('../sms');
 
 
-let sendSMSRoute=(app,accountSid,authToken,twilioNumber)=>{
+let sendSMSRoute=(app)=>{
     app.post('/sendSMS',(req,res)=>{
         let {number , message}= req.body;
 

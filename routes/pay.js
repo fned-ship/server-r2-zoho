@@ -2,7 +2,7 @@ const User = require('../models/user');
 const {sendMail} = require("../zohoMail");
 const axios = require('axios');
 
-let Pay=(app,stripe_api_key,KONNECT_WALLET_ID,KONNECT_API_KEY,emailUserName,monthly,annually,serverURL,clientDomainName)=>{
+let Pay=(app,KONNECT_WALLET_ID,KONNECT_API_KEY,monthly,annually,serverURL,clientDomainName)=>{
     const sendEmail=(email,message)=>{
         const emailBody = `<p>${message}</p>`;
         sendMail(email,"new message",emailBody)
@@ -125,66 +125,6 @@ let Pay=(app,stripe_api_key,KONNECT_WALLET_ID,KONNECT_API_KEY,emailUserName,mont
     
 
 
-    app.post("/stripe-payment", (req, res) => {
-        const stripe = require("stripe")(stripe_api_key);
-        const { amount, email, token, method } = req.body;
-    
-        // Check if the user's email exists in the database
-        User.findOne({ email })
-            .then(user => {
-                if (!user) {
-                    return res.status(404).json({ message: 'User not found' });
-                }
-    
-                if (method === "monthly" && amount != monthly) {
-                    return res.status(400).json({ message: "Invalid amount for monthly subscription" });
-                }
-                if (method === "annually" && amount != annually) {
-                    return res.status(400).json({ message: "Invalid amount for annually subscription" });
-                }
-    
-                // Proceed with Stripe payment
-                return stripe.customers
-                    .create({
-                        email: email,
-                        source: token.id,
-                        name: token.card.name,
-                    })
-                    .then((customer) => {
-                        return stripe.charges.create({
-                            amount: parseFloat(amount) * 100,
-                            description: `Payment for ${amount} USD`,
-                            currency: "USD",
-                            customer: customer.id,
-                        });
-                    })
-                    .then((charge) => {
-                        if (user.payementTime) {
-                            // If payementTime exists, add one month/year to it
-                            const lastDate = new Date(user.payementTime);
-                            lastDate.setMonth(lastDate.getMonth() + (method === 'monthly' ? 1 : 12));
-                            user.payementTime = lastDate;
-                        } else {
-                            // If payementTime does not exist, set it to one month/year from the current date
-                            const currentDate = new Date();
-                            currentDate.setMonth(currentDate.getMonth() + (method === 'monthly' ? 1 : 12));
-                            user.payementTime = currentDate;
-                        }
-    
-                        return user.save()
-                            .then(() => {
-                                sendEmail(email, `${method === 'monthly' ? 'One month is' : 'One year is'} paid successfully`);
-                                res.status(200).send(charge);
-                            });
-                    });
-            })
-            .catch(err => {
-                // Handle any errors that occur during the process
-                res.status(500).json({ message: 'Server error', error: err.message });
-            });
-    });
-
-
     app.post('/update-phone', async (req, res) => {
         const { id, _id, email, phoneNumber } = req.body;
         try {
@@ -199,26 +139,3 @@ let Pay=(app,stripe_api_key,KONNECT_WALLET_ID,KONNECT_API_KEY,emailUserName,mont
     
 }
 module.exports = Pay;
-
-
-// //
-// const user = await User.findOne({ email });
-    
-// if (!user) {
-//     return res.status(404).json({ message: 'User not found' });
-// }
-
-// if (user.payementTime) {
-//     // If payementTime exists, add one month to it
-//     const lastDate = new Date(user.payementTime);
-//     lastDate.setMonth(lastDate.getMonth() + (method==='monthly'?1:12));
-//     user.payementTime = lastDate;
-// } else {
-//     // If payementTime does not exist, set it to one month from the current date
-//     const currentDate = new Date();
-//     currentDate.setMonth(currentDate.getMonth() + (method==='monthly'?1:12));
-//     user.payementTime = currentDate;
-// }
-// await user.save();
-// sendEmail(email,`${method==='monthly'?'one month is':'one year is'} payed successfully`);
-// //

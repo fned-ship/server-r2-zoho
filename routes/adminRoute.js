@@ -1,7 +1,7 @@
 let User = require('../models/user');
 const {sendMail} = require("../zohoMail");
 
-let adminRouter=(app,accountSid,authToken,twilioNumber,emailUserName)=>{
+let adminRouter=(app)=>{
     const sendEmail=(email,message)=>{
         const emailBody = `<p>${message}</p>`;
         sendMail(email,"new message",emailBody)

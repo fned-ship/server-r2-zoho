@@ -4,7 +4,7 @@ let User=require("../models/user");
 const cron = require('node-cron');
 const sendSms = require('../sms');
 
-let NodeCron = (accountSid, authToken, twilioNumber, adminPhoneNumber) => {
+let NodeCron = () => {
 
   cron.schedule('0 12 * * *', async () => {
     const now = new Date();

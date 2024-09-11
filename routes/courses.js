@@ -15,7 +15,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-let courses=(app,clientDomainName,accountSid,authToken,twilioNumber,emailUserName)=>{
+let courses=(app)=>{
 
 
   const sendEmail=(email,message)=>{
