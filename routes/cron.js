@@ -2,24 +2,10 @@ let Ticket = require('../models/ticket');
 let NormalCoursesRequest=require('../models/normalCoursesRequest');
 let User=require("../models/user");
 const cron = require('node-cron');
-const twilio = require('twilio');
+const sendSms = require('../sms');
 
 let NodeCron = (accountSid, authToken, twilioNumber, adminPhoneNumber) => {
-  const sendSMS=(number , message)=>{
-    const client = new twilio(accountSid, authToken);
 
-    client.messages.create({
-        body: message,   // Message content
-        to: `+${number}` ,             // Your phone number in E.164 format
-        from: twilioNumber            // Your Twilio number
-    })
-    .then((message) =>{
-        console.log(message.sid);
-    })
-    .catch((error) =>{ 
-        console.error(error);
-    });
-  }
   cron.schedule('0 12 * * *', async () => {
     const now = new Date();
     
@@ -49,10 +35,10 @@ let NodeCron = (accountSid, authToken, twilioNumber, adminPhoneNumber) => {
         if (now >= targetDate) {
 
           if (ticket.answer && ticket.answer.firstName) {
-            sendSMS(ticket.answer.phone,`Hello ${ticket.answer.firstName}, your ticket titled "${ticket.title}" needs your attention.`)
+            sendSms("+"+ticket.answer.phone,`Hello ${ticket.answer.firstName}, your ticket titled "${ticket.title}" needs your attention.`)
           } else {
             const admins=await User.find({role:'admin'}).lean();
-            admins.forEach(admin=>sendSMS(admin.number,`Hello admin , the ticket titled "${ticket.title}" needs your attention.`))
+            admins.forEach(admin=>sendSms("+"+admin.number,`Hello admin , the ticket titled "${ticket.title}" needs your attention.`))
           }
 
         }
@@ -73,11 +59,11 @@ let NodeCron = (accountSid, authToken, twilioNumber, adminPhoneNumber) => {
             }
           }  
           if(!clientFinished){
-            sendSMS(request.client.number,`Hello ${request.client.firstName}, your course titled "${request.course}" needs your attention`)
+            sendSms("+"+request.client.number,`Hello ${request.client.firstName}, your course titled "${request.course}" needs your attention`)
           }
-          sendSMS(request.trainer.number,`Hello ${request.client.firstName}, the course titled "${request.course}" requested by ${request.client.firstName} needs your attention`)
+          sendSms("+"+request.trainer.number,`Hello ${request.client.firstName}, the course titled "${request.course}" requested by ${request.client.firstName} needs your attention`)
           const admins=await User.find({role:'admin'}).lean();
-          admins.forEach(admin=>sendSMS(admin.number,`Hello admin, the course titled "${request.course}" requested by ${request.client.firstName} have reached the limit.`))
+          admins.forEach(admin=>sendSms("+"+admin.number,`Hello admin, the course titled "${request.course}" requested by ${request.client.firstName} have reached the limit.`))
         }
       })
     } catch (error) {

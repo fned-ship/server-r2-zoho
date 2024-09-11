@@ -7,7 +7,7 @@ const User = require('../models/user');
 const NewCoursesRequest = require('../models/newCoursesRequest');
 const NormalCoursesRequest = require('../models/normalCoursesRequest');
 const mongoose = require('mongoose');
-const twilio = require('twilio');
+const sendSms = require('../sms'); // sendSms
 const {sendMail} = require("../zohoMail");
 const Customers = require('../models/customers');
 const { putObject, deleteObject } = require('../s3Client'); // Import the functions from s3Client.js
@@ -18,21 +18,6 @@ dotenv.config();
 let courses=(app,clientDomainName,accountSid,authToken,twilioNumber,emailUserName)=>{
 
 
-    const sendSMS=(number , message)=>{
-      const client = new twilio(accountSid, authToken);
-
-      client.messages.create({
-          body: message,   // Message content
-          to: `+${number}` ,             // Your phone number in E.164 format
-          from: twilioNumber            // Your Twilio number
-      })
-      .then((message) =>{
-          console.log(message.sid);
-      })
-      .catch((error) =>{ 
-          console.error(error);
-      });
-  }
   const sendEmail=(email,message)=>{
       const emailBody = `<p>${message}</p>`;
       sendMail(email,"new message",emailBody)
@@ -280,10 +265,10 @@ app.put('/course/:id', upload.any(), async (req, res) => {
         await newCourseRequest.save();
         if(client.manager){
           const manager=await User.findOne({email:client.manager}).lean();
-          sendSMS(manager.number,"you received a new course request from "+client.firstName)
+          sendSms("+"+manager.number,"you received a new course request from "+client.firstName)
         }else{
           const admins=await User.find({role:'admin'}).lean();
-          admins.forEach(admin=>sendSMS(admin.number,"you received a new course request from "+client.firstName))
+          admins.forEach(admin=>sendSms("+"+admin.number,"you received a new course request from "+client.firstName))
         }
 
 
@@ -323,10 +308,10 @@ app.put('/course/:id', upload.any(), async (req, res) => {
       await newCourseRequest.save();
       if(client.manager){
         const manager=await User.findOne({email:client.manager}).lean();
-        sendSMS(manager.number,"you received a new course request from "+client.firstName)
+        sendSms("+"+manager.number,"you received a new course request from "+client.firstName)
       }else{
         const admins=await User.find({role:'admin'}).lean();
-        admins.forEach(admin=>sendSMS(admin.number,"you received a new course request from "+client.firstName))
+        admins.forEach(admin=>sendSms("+"+admin.number,"you received a new course request from "+client.firstName))
       }
       res.status(201).json({ message: 'New course request created successfully' });
     } catch (error) {
@@ -403,9 +388,9 @@ app.put('/course/:id', upload.any(), async (req, res) => {
         await course.save();
         await NewCoursesRequest.findByIdAndDelete(id);
 
-        sendSMS(requestExists.client.number, `Your demand for ${requestExists.title} course has been created!`);
+        sendSms("+"+requestExists.client.number, `Your demand for ${requestExists.title} course has been created!`);
         const admins = await User.find({ role: 'admin' }).lean();
-        admins.forEach(admin => sendSMS(admin.number, `${requestExists.trainer.firstName} just finished creating ${requestExists.title} course!`));
+        admins.forEach(admin => sendSms("+"+admin.number, `${requestExists.trainer.firstName} just finished creating ${requestExists.title} course!`));
 
         res.status(201).json({ message: 'Course uploaded successfully' });
     } catch (error) {
@@ -446,12 +431,12 @@ app.put('/course/:id', upload.any(), async (req, res) => {
               const newCrs=await NewCoursesRequest.findByIdAndUpdate(requestId, { status: 'accepted' });
               sendEmail(newCrs.client.email,'your demand for '+newCrs.title+' course got accepted from your manager');
               const admins=await User.find({role:'admin'}).lean();
-              admins.forEach(admin=>sendSMS(admin.number,"you received a new course request from "+newCrs.client.firstName))
+              admins.forEach(admin=>sendSms("+"+admin.number,"you received a new course request from "+newCrs.client.firstName))
           } else {
               const normalCrs=await NormalCoursesRequest.findByIdAndUpdate(requestId, { status: 'accepted' });
               sendEmail(normalCrs.client.email,'your demand for '+normalCrs.course.name+' course got accepted from your manager')
               const admins=await User.find({role:'admin'}).lean();
-              admins.forEach(admin=>sendSMS(admin.number,"you received a new course request from "+normalCrs.client.firstName))
+              admins.forEach(admin=>sendSms("+"+admin.number,"you received a new course request from "+normalCrs.client.firstName))
           }
           res.json({ message: 'Request accepted' });
       } catch (error) {
@@ -532,7 +517,7 @@ app.put('/course/:id', upload.any(), async (req, res) => {
 
               await newCourseRequest.save();
               const admins=await User.find({user:'admin'}).lean();
-              admins.forEach(admin=>sendSMS(admin.number,"you received a new course request from "+client.firstName))
+              admins.forEach(admin=>sendSms("+"+admin.number,"you received a new course request from "+client.firstName))
 
               res.status(200).json({ message: 'Course request created successfully' });
           } catch (error) {
@@ -672,8 +657,8 @@ app.put('/course/:id', upload.any(), async (req, res) => {
         request.status = 'with trainer';
         request.trainer = trainer;
         await request.save();
-        sendSMS(trainer.number,"you have received a new course request");
-        sendSMS(request.client.number,"your request for "+(request.title?request.title:request.course.name)+" course got accepted"+(request.title?'':' , now you can start your training !'));
+        sendSms("+"+trainer.number,"you have received a new course request");
+        sendSms("+"+request.client.number,"your request for "+(request.title?request.title:request.course.name)+" course got accepted"+(request.title?'':' , now you can start your training !'));
         res.json(request);
     } catch (error) {
         res.status(500).send(error);
@@ -1038,7 +1023,7 @@ app.put('/course/:id', upload.any(), async (req, res) => {
                 }
             } else {
                 lessonStatus = 'finished';
-                sendSMS(courseRequest.trainer.number, "You've got new questions to correct");
+                sendSms("+"+courseRequest.trainer.number, "You've got new questions to correct");
             }
 
             lesson.status = lessonStatus;
@@ -1135,11 +1120,11 @@ app.put('/course/:id', upload.any(), async (req, res) => {
           if (lessonClientScore < lesson.fullScore) {
             lesson.status = 'failed';
             lesson.failed.push(currentDate);
-            sendSMS(courseRequest.client.number,'you have failed an exam')
+            sendSms("+"+courseRequest.client.number,'you have failed an exam')
           } else {
             lesson.status = 'passed';
             lesson.clientScore+=score;
-            sendSMS(courseRequest.client.number,'you have passed an exam !')
+            sendSms("+"+courseRequest.client.number,'you have passed an exam !')
             // check if the user finished all lessons
               const user = await User.findById(courseRequest.client.id);
               if (!user) {
