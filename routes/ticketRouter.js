@@ -68,11 +68,12 @@ let ticketRouter=(app,clientDomainName,emailUserName,socket,io)=>{
 
     app.get('/getClientTickets/:userID', async (req, res) => {
         const { userID } = req.params;
-      
+        console.log('-- userID ---:',userID);
         try {
           const tickets = await Ticket.find({ userID: userID });
           res.json(tickets);
         } catch (err) {
+          console.log("-- err -- : ", err);
           res.status(500).json({ message: err.message });
         }
     });

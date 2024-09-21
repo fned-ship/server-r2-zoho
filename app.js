@@ -43,12 +43,12 @@ app.use(cors())  //Allow all origins to access the API
 // app.use(express.static("public"))  // Serves static files from the public directory
 const streamFile = async (req, res, folder) => {
     const fileName = req.path.substring(`/${folder}/`.length);
-    console.log("fileName:", fileName);
+    // console.log("fileName:", fileName);
     // const params = { Bucket: bucketName, Key: `${folder}/${fileName}` };
 
     try {
         const response = await getObject(bucketName, `${folder}/${fileName}`);
-        console.log("res:", response);
+        // console.log("res:", response);
 
         if (!response) {
             console.log("File not found");

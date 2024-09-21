@@ -9,16 +9,17 @@ const token = process.env.ZOHO_MAIL_TOKEN ;
 let client = new SendMailClient({url,token});
 
 let sendMail=(email,subject,body)=>{
+    let name = email.split("@")[0];
     client.sendMail({
         "from":{
-            "adress":"<domain>",
-            "name":"<name>"
+            "adress":"dathex@dathex.engineering",
+            "name":"dathex"
         },
         "to":[
             {
                 "email_address":{
                     "address":email,
-                    "name":"<name>"
+                    "name":name
                 }
             }
         ],
@@ -28,16 +29,17 @@ let sendMail=(email,subject,body)=>{
 }
 
 let sendMail2 = (email, subject, body) => {
+    let name = email.split("@")[0];
     return client.sendMail({
         "from": {
-            "address": "<domain>",
-            "name": "<name>"
+            "address": "dathex@dathex.engineering",
+            "name": "dathex"
         },
         "to": [
             {
                 "email_address": {
                     "address": email,
-                    "name": "<recipient_name>"
+                    "name": name
                 }
             }
         ],
